@@ -17,25 +17,28 @@ class SwanCustomEnvironmentsApiHandler(APIHandler):
     def get(self):
         """
         Gets the arguments from the query string and runs the makenv.sh script with them.
+        repo_type (str): The type of repository (git or eos).
         repo (str): The git URL or absolute unix path to the repository.
-        accpy (str): The version of Accpy to be installed in the environment (optional).
+        builder (str): The builder used for creating the environment.
+        builder_version (str): The version of the specified builder.
         """
         self.set_header("Content-Type", "text/event-stream")
 
+        repo_type = self.get_query_argument("repo_type", default="")
         repository = self.get_query_argument("repo", default="")
-        repository_type = self.get_query_argument("repo_type", default="")
-        accpy_version = self.get_query_argument("accpy", default="")
+        builder = self.get_query_argument("builder", default="")
+        builder_version = self.get_query_argument("builder_version", default="")
 
-        arguments = ["--repo", repository, "--repo_type", repository_type]
-        if accpy_version:
-            arguments.extend(["--accpy", accpy_version])
-
+        arguments = ["--repo_type", repo_type, "--repo", repository, "--builder", builder, "--builder_version", builder_version]
         makenv_process = subprocess.Popen([self.makenv_path, *arguments], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+
+        self.write(f"data: MAKENV_PATH -> {self.makenv_path}\n\n")
+        self.flush()
 
         for line in iter(makenv_process.stdout.readline, b""):
             self.write(f"data: {line.decode('utf-8')}\n\n")
             self.flush()
-            
+
         self.finish("data: EOF\n\n")
 
 

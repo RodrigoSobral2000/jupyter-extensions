@@ -1,12 +1,9 @@
 #!/bin/bash
 
-# Create environment and install packages
-${BUILDER_VERSION} env create -f ${REQ_PATH} -n ${ENV_NAME} -y
-
-# With a symlink on the user's home, no other customenvs can be created
-ln -f -s /opt/conda/envs/${ENV_NAME} ${ENV_PATH}
-ENV_PATH="/opt/conda/envs/${ENV_NAME}"
+# Create the environment and install packages
+${BUILDER_VERSION} create -p ${ENV_PATH} --file ${REQ_PATH} -y | tee -a ${LOG_PATH}
 
 # Activate the environment
 _log "Setting up the environment..."
-source activate ${ENV_NAME}
+ACTIVATE_ENV_CMD="${BUILDER} activate ${ENV_PATH}"
+$(echo ${ACTIVATE_ENV_CMD}) | tee -a ${LOG_PATH}

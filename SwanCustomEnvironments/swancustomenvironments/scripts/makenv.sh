@@ -11,8 +11,6 @@ GIT_HOME="$HOME/SWAN_projects" # Path where git repositories are stored
 # Check if an environment already exists in the session, avoiding multiple environments
 CURRENT_ENV_NAME=$(find "/home/$USER" -type d -name "*_env" | head -n 1 | cut -d '/' -f4)
 CURRENT_REPO_PATH=$(tail -n 1 "/home/$USER/.bash_profile" | cut -d ' ' -f2)
-
-# Check if an environment already exists in the session
 if [ -n "${CURRENT_ENV_NAME}" ]; then
     echo "ENVIRONMENT_ALREADY_EXISTS:${CURRENT_ENV_NAME}"
     echo "REPO_PATH:${CURRENT_REPO_PATH#$HOME}"
@@ -52,10 +50,10 @@ define_repo_path() {
 
 # Function for printing the help page
 print_help() {
-    _log "Usage: makenv --repo_type TYPE --repo REPOSITORY --builder BUILDER --builder_version VERSION [--help/-h]"
+    _log "Usage: makenv --repo REPOSITORY --repo_type TYPE --builder BUILDER --builder_version VERSION [--help/-h]"
     _log "Options:"
-    _log "  --repo_type TYPE            Type of repository (git or eos)"
     _log "  --repo REPOSITORY           Path or http link for a public repository"
+    _log "  --repo_type TYPE            Type of repository (git or eos)"
     _log "  --builder BUILDER           Builder to create the environment"
     _log "  --builder_version VERSION   Version of the builder to use"
     _log "  -h, --help                  Print this help page"
@@ -67,20 +65,20 @@ print_help() {
 while [ $# -gt 0 ]; do
     key="$1"
     case $key in
-        --repo_type)
-            REPO_TYPE=$2
-            # Check if a repository type was provided
-            if [ -z "$REPO_TYPE" ]; then
-                _error "No repository type provided." true
-            fi
-            shift
-            shift
-            ;;
         --repo)
             REPOSITORY=$2
             # Check if a repository was provided
             if [ -z "$REPOSITORY" ]; then
                 _error "No repository provided." true
+            fi
+            shift
+            shift
+            ;;
+        --repo_type)
+            REPO_TYPE=$2
+            # Check if a repository type was provided
+            if [ -z "$REPO_TYPE" ]; then
+                _error "No repository type provided." true
             fi
             shift
             shift
@@ -171,13 +169,14 @@ if [ ! -f "${REQ_PATH}" ]; then
 fi
 
 _log "Creating environment ${ENV_NAME} using ${BUILDER} (${BUILDER_VERSION})..."
-source "${BUILDER_PATH}" | tee -a ${LOG_FILE}
+source "${BUILDER_PATH}"
+
+$(echo ${ACTIVATE_ENV_CMD})
 
 # Make sure the Jupyter server finds the new environment kernel in /home/$USER/.local
 mkdir -p /home/$USER/.local/share/jupyter/kernels
 ln -f -s ${ENV_PATH}/share/jupyter/kernels/${ENV_NAME} /home/$USER/.local/share/jupyter/kernels/${ENV_NAME} | tee -a ${LOG_FILE}
 
-# Now the environment is set up, and as git repos are installed in /tmp, move it to the $Home/SWAN_projects folder
 if [[ ${REPO_TYPE} == "git" ]]; then
     # Move the repository from /tmp to the $CERNBOX_HOME/SWAN_projects folder
     mkdir -p ${GIT_HOME}
